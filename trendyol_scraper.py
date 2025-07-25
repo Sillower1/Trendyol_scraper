@@ -5,13 +5,12 @@ import re
 
 async def scrape_product(url):
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False)  # Debug için headless=False
+        browser = await p.chromium.launch(headless=False) 
         page = await browser.new_page()
 
         await page.goto(url, wait_until="networkidle")
-        await page.wait_for_timeout(3000)  # Sayfanın tam yüklenmesi için bekle
+        await page.wait_for_timeout(3000)
 
-        # Çerez/KVKK popup'ı varsa otomatik kapat (farklı selector'lar ile)
         cookie_selectors = [
             'button:has-text("Kabul Et")',
             'button#onetrust-accept-btn-handler',
@@ -28,19 +27,15 @@ async def scrape_product(url):
             except:
                 continue
 
-        # Ekstra bekleme ve scroll (açıklama, yorum, Q&A için)
         await page.wait_for_timeout(2000)
         await page.evaluate("window.scrollTo(0, document.body.scrollHeight/3)")
         await page.wait_for_timeout(1000)
 
-        # --- ÜRÜN BAŞLIĞI ---
         title = await page.locator('h1').first.inner_text()
-
-        # --- ÜRÜN FİYATI ---
+-
         price_locator = page.locator('span.price-view-original')
         price = await price_locator.inner_text() if await price_locator.count() > 0 else None
 
-        # --- ÜRÜN AÇIKLAMASI (basitleştirilmiş) ---
         description = ""
         try:
             desc_element = page.locator('div#product-description, div.product-description, div#productDetail')
@@ -49,7 +44,6 @@ async def scrape_product(url):
         except Exception as e:
             print(f"Açıklama alınırken hata: {e}")
 
-        # --- ÜRÜN GÖRSELLERİ ---
         image_urls = []
         thumbs = page.locator('div._carouselThumbsContainer_05669af img._carouselThumbsImage_ddecc3e')
         thumbs_count = await thumbs.count()
@@ -58,7 +52,6 @@ async def scrape_product(url):
             if src and src not in image_urls:
                 image_urls.append(src)
 
-        # --- YORUMLAR ---
         comments = []
         try:
             print("Yorumlar aranıyor...")
@@ -162,7 +155,6 @@ async def scrape_product(url):
         except Exception as e:
             print(f"Yorumlar alınırken hata: {e}")
 
-        # --- SORU-CEVAP (Q&A) ---
         qna_list = []
         try:
             await page.goto(url, wait_until="networkidle")
